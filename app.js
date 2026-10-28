@@ -15,6 +15,7 @@ const state = {
 
 const layer = document.querySelector('#nodeLayer');
 const edgeLayer = document.querySelector('#edgeLayer');
+const inspector = document.querySelector('#inspector');
 const invalidateBtn = document.querySelector('#invalidateBtn');
 const invalidateForm = document.querySelector('#invalidateForm');
 
@@ -44,6 +45,17 @@ function displayId(id) {
   return id.replace(/^([A-Z])(\d+)$/, '$1-$2');
 }
 
+function openInspector() {
+  inspector.classList.add('open');
+  inspector.setAttribute('aria-hidden', 'false');
+}
+
+function closeInspector() {
+  inspector.classList.remove('open');
+  inspector.setAttribute('aria-hidden', 'true');
+  invalidateForm.classList.remove('open');
+}
+
 function renderEdges() {
   edgeLayer.innerHTML = '';
   for (const edge of atlasGraph.edges) {
@@ -65,12 +77,17 @@ function updateEdgeStates() {
   edgeLayer.querySelectorAll('.edge').forEach((path) => {
     path.classList.remove('affected', 'review', 'secondary');
     if (!state.result) return;
+
     const target = nodeById(path.dataset.to);
-    const targetImpact = target?.impact;
-    if (!targetImpact?.path?.includes(path.dataset.from) || !targetImpact.path.includes(path.dataset.to)) return;
-    if (target.status === 'unsupported') path.classList.add('affected');
-    else if (target.status === 'needs_review') path.classList.add('review');
-    else if (target.status === 'supported') path.classList.add('secondary');
+    const impact = target?.impact;
+    if (!impact) return;
+
+    const broken = impact.broken?.some((item) => item.from === path.dataset.from);
+    const surviving = impact.surviving?.some((item) => item.from === path.dataset.from);
+
+    if (broken && target.status === 'unsupported') path.classList.add('affected');
+    else if (broken) path.classList.add('review');
+    else if (surviving) path.classList.add('secondary');
   });
 }
 
@@ -83,13 +100,13 @@ function renderNodes() {
     element.style.top = `${node.y}%`;
     element.dataset.id = node.id;
     element.innerHTML = `
-      <div class="node-top">
-        <span class="node-kind">${node.type.toUpperCase()} · ${node.id}</span>
-        <span class="node-state"></span>
-      </div>
-      <h3>${node.label}</h3>
-      <p>${node.summary}</p>`;
-    element.addEventListener('click', () => selectNode(node.id));
+      <span class="node-anchor" aria-hidden="true"><span class="node-state"></span></span>
+      <span class="node-copy">
+        <span class="node-kind">${node.type.toUpperCase()} · ${displayId(node.id)}</span>
+        <h3>${node.label}</h3>
+        <p>${node.summary}</p>
+      </span>`;
+    element.addEventListener('click', () => selectNode(node.id, true));
     layer.appendChild(element);
   }
 }
@@ -100,8 +117,6 @@ function renderDependencies(node) {
   list.innerHTML = '';
 
   if (node.impact) {
-    // Internal support scores drive deterministic status propagation, but they are
-    // not calibrated probabilities. Keep the judge-facing explanation qualitative.
     meter.classList.add('hidden');
 
     const rows = [
@@ -143,7 +158,7 @@ function renderDependencies(node) {
   }).join('');
 }
 
-function selectNode(id) {
+function selectNode(id, shouldOpen = true) {
   state.selected = id;
   renderNodes();
   const node = nodeById(id);
@@ -162,6 +177,8 @@ function selectNode(id) {
   invalidateBtn.classList.toggle('hidden', !canInvalidate);
   if (!canInvalidate) invalidateForm.classList.remove('open');
   renderDependencies(node);
+
+  if (shouldOpen) openInspector();
 }
 
 function renderImpact() {
@@ -194,10 +211,10 @@ function renderImpact() {
       ? `${weakenedCount} weakened path${weakenedCount === 1 ? '' : 's'} · ${survivingCount} independent path${survivingCount === 1 ? '' : 's'} survives`
       : `${weakenedCount} support path${weakenedCount === 1 ? '' : 's'} broken`;
     button.innerHTML = `
-      <b>${node.label}</b>
-      <span>${statusLabel(node.status)} · ${detail}</span>
+      <b>${statusLabel(node.status)} · ${node.label}</b>
+      <span>${detail}</span>
       <div class="loss">${pathSummary}</div>`;
-    button.addEventListener('click', () => selectNode(node.id));
+    button.addEventListener('click', () => selectNode(node.id, true));
     list.appendChild(button);
   }
   document.querySelector('#impactDrawer').classList.add('open');
@@ -210,10 +227,7 @@ function invalidate() {
   state.invalidated = true;
   state.selected = 'E17';
   invalidateForm.classList.remove('open');
-
-  const dot = document.querySelector('#rail-dot-E17');
-  dot.classList.remove('valid');
-  dot.classList.add('invalid');
+  document.body.classList.add('is-fallout');
 
   const source = baselineNodeById('E17');
   const ripple = document.querySelector('#ripple');
@@ -226,9 +240,10 @@ function invalidate() {
   setTimeout(() => {
     renderNodes();
     updateEdgeStates();
-    selectNode('E17');
+    selectNode('E17', false);
+    closeInspector();
     renderImpact();
-  }, 280);
+  }, 320);
 }
 
 function reset() {
@@ -236,20 +251,24 @@ function reset() {
   state.selected = 'E17';
   state.result = null;
   state.nodes = baselineNodes.map((node) => ({ ...node }));
+  document.body.classList.remove('is-fallout');
   document.querySelector('#impactDrawer').classList.remove('open');
   invalidateForm.classList.remove('open');
-  const dot = document.querySelector('#rail-dot-E17');
-  dot.classList.add('valid');
-  dot.classList.remove('invalid');
+  closeInspector();
   renderNodes();
   updateEdgeStates();
-  selectNode('E17');
+  selectNode('E17', false);
 }
 
 invalidateBtn.addEventListener('click', () => invalidateForm.classList.toggle('open'));
 document.querySelector('#confirmBtn').addEventListener('click', invalidate);
 document.querySelector('#resetBtn').addEventListener('click', reset);
-document.querySelectorAll('[data-select]').forEach((button) => button.addEventListener('click', () => selectNode(button.dataset.select)));
+document.querySelector('#closeInspectorBtn').addEventListener('click', closeInspector);
+document.querySelector('#primaryInvalidateCta').addEventListener('click', () => {
+  selectNode('E17', true);
+  invalidateForm.classList.add('open');
+  setTimeout(() => document.querySelector('#reason').focus(), 120);
+});
 
 const architectureOverlay = document.querySelector('#architectureOverlay');
 document.querySelector('#architectureBtn').addEventListener('click', () => {
@@ -270,6 +289,7 @@ document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
     architectureOverlay.classList.remove('open');
     architectureOverlay.setAttribute('aria-hidden', 'true');
+    closeInspector();
   }
 });
 
@@ -277,4 +297,4 @@ document.querySelector('#workspaceName').textContent = atlasGraph.workspace;
 document.querySelector('#workspaceMeta').textContent = `${atlasGraph.nodes.length} nodes · ${atlasGraph.edges.length} verified edges`;
 renderEdges();
 renderNodes();
-selectNode('E17');
+selectNode('E17', false);
