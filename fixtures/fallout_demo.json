@@ -1,0 +1,24 @@
+{
+  "workspace": "Atlas Onboarding",
+  "nodes": [
+    {"id":"E17","type":"evidence","label":"Experiment E-17","status":"valid"},
+    {"id":"E19","type":"evidence","label":"Interview Study E-19","status":"valid"},
+    {"id":"C1","type":"claim","label":"Simplified onboarding improves activation","status":"supported"},
+    {"id":"C2","type":"claim","label":"Front-loaded setup creates avoidable friction","status":"supported"},
+    {"id":"D1","type":"decision","label":"Global rollout","status":"supported"},
+    {"id":"D2","type":"decision","label":"Q4 onboarding roadmap","status":"supported"},
+    {"id":"A1","type":"artifact","label":"Sales deck claim","status":"supported"},
+    {"id":"D3","type":"decision","label":"Progressive profile setup","status":"supported"}
+  ],
+  "edges": [
+    {"from":"E17","to":"C1","relation":"supports","weight":0.98,"verified":true},
+    {"from":"E19","to":"C2","relation":"supports","weight":0.90,"verified":true},
+    {"from":"C1","to":"D1","relation":"supports","weight":0.95,"verified":true},
+    {"from":"C1","to":"D2","relation":"supports","weight":0.72,"verified":true},
+    {"from":"C2","to":"D2","relation":"supports","weight":0.66,"verified":true},
+    {"from":"C1","to":"A1","relation":"supports","weight":0.68,"verified":true},
+    {"from":"C2","to":"A1","relation":"supports","weight":0.52,"verified":true},
+    {"from":"C1","to":"D3","relation":"supports","weight":0.30,"verified":true},
+    {"from":"C2","to":"D3","relation":"supports","weight":0.88,"verified":true}
+  ]
+}

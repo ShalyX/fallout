@@ -1,0 +1,50 @@
+[
+  {
+    "id": "direct-primary-support",
+    "source": "Experiment E-17: simplified onboarding increased completed activation from 38.2% to 42.4%, an 11% relative lift.",
+    "target": "Decision: Roll simplified onboarding out globally. Rationale: E-17 demonstrated a meaningful activation lift and is the primary reason to ship this flow to all users.",
+    "expected": "primary_support_dependency"
+  },
+  {
+    "id": "mere-mention",
+    "source": "Experiment E-17: simplified onboarding increased activation by 11%.",
+    "target": "Weekly note: We reviewed E-17 today. Separately, the legal team approved the new consent copy, so we will ship the consent update next week.",
+    "expected": "mention/reference"
+  },
+  {
+    "id": "independent-support",
+    "source": "Experiment E-17: simplified onboarding increased activation by 11%.",
+    "target": "Decision: Prioritize onboarding in Q4. Rationale: E-17 showed activation lift; additionally, 14 of 18 interviews independently identified workspace setup as the largest first-session blocker.",
+    "expected": "support_dependency"
+  },
+  {
+    "id": "topic-similarity-no-support",
+    "source": "Research note: users dislike long onboarding forms.",
+    "target": "Decision: Replace the billing provider because the current provider is discontinuing our region on December 1.",
+    "expected": "none"
+  },
+  {
+    "id": "background-context-not-rationale",
+    "source": "Market report: consumer software companies are simplifying signup flows across the category.",
+    "target": "Decision: Reduce onboarding from eleven questions to four. Background: competitors are simplifying signup. Rationale: our support logs show 41% of setup tickets concern mandatory profile questions, and the change is intended to remove those specific blockers.",
+    "expected": "context"
+  },
+  {
+    "id": "secondary-support-only",
+    "source": "Experiment E-17: simplified onboarding increased activation by 11%.",
+    "target": "Decision: Keep progressive profile setup. Rationale: nine of twelve interviews described front-loaded setup as frustrating. E-17 also suggests the pattern may help activation, but this was treated as a secondary benefit rather than the reason to retain the interaction.",
+    "expected": "support_dependency"
+  },
+  {
+    "id": "postdated-evidence-cannot-support-original-decision",
+    "source": "Created 2026-10-20. Follow-up study E-24 found that users preferred progressive setup.",
+    "target": "Created 2026-09-12. Decision: adopt progressive setup. Rationale: support logs show repeated confusion with the required setup form.",
+    "expected": "context"
+  },
+  {
+    "id": "shared-number-but-different-meaning",
+    "source": "Finance note: onboarding infrastructure costs fell 11% after a vendor discount.",
+    "target": "Decision: Roll out simplified onboarding. Rationale: Experiment E-17 showed an 11% relative increase in completed activation.",
+    "expected": "none"
+  }
+]
