@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Fallout maps the blast radius when evidence behind a business decision breaks." />
+  <title>Fallout — Evidence Blast Radius</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="rail">
+      <div class="brand-row">
+        <div class="brand-mark">F</div>
+        <div>
+          <div class="brand">Fallout</div>
+          <div class="brand-sub">evidence blast radius</div>
+        </div>
+      </div>
+
+      <div class="rail-section">
+        <div class="eyebrow">WORKSPACE</div>
+        <div class="workspace-name" id="workspaceName">Atlas Onboarding</div>
+        <div class="workspace-meta" id="workspaceMeta">8 nodes · 9 verified edges</div>
+        <div class="fixture-badge">Synthetic corpus</div>
+      </div>
+
+      <div class="rail-section">
+        <div class="eyebrow">EVIDENCE</div>
+        <button class="evidence-item selected" data-select="E17">
+          <span class="evidence-dot valid" id="rail-dot-E17"></span>
+          <span><b>E-17</b><small>Activation experiment</small></span>
+        </button>
+        <button class="evidence-item" data-select="E19">
+          <span class="evidence-dot valid"></span>
+          <span><b>E-19</b><small>Interview study</small></span>
+        </button>
+      </div>
+
+      <div class="rail-section legend">
+        <div class="eyebrow">STATE</div>
+        <div><span class="legend-swatch supported"></span> Supported</div>
+        <div><span class="legend-swatch review"></span> Needs review</div>
+        <div><span class="legend-swatch unsupported"></span> Unsupported</div>
+      </div>
+
+      <div class="provider-chip">
+        <span class="provider-dot pending"></span>
+        Nebius Token Factory
+        <small>Nemotron 3 Super · credentials pending</small>
+      </div>
+    </aside>
+
+    <main class="canvas-wrap">
+      <header class="topbar">
+        <div>
+          <div class="eyebrow">DECISION LINEAGE / REVERSE IMPACT</div>
+          <h1>What breaks when the evidence breaks?</h1>
+        </div>
+        <div class="topbar-actions"><button class="ghost-btn" id="architectureBtn">System trace</button><button class="ghost-btn" id="resetBtn">Reset demo</button></div>
+      </header>
+
+      <section class="graph-stage" id="graphStage">
+        <div class="axis-label evidence-axis">EVIDENCE</div>
+        <div class="axis-label claim-axis">CLAIMS</div>
+        <div class="axis-label decision-axis">DECISIONS / ARTIFACTS</div>
+        <svg id="edgeLayer" viewBox="0 0 1000 700" preserveAspectRatio="none" aria-hidden="true"></svg>
+        <div id="nodeLayer"></div>
+        <div class="ripple" id="ripple"></div>
+      </section>
+
+      <section class="impact-drawer" id="impactDrawer" aria-live="polite">
+        <div class="impact-head">
+          <div>
+            <div class="eyebrow">BLAST RADIUS</div>
+            <h2 id="impactHeadline">4 downstream items need attention</h2>
+          </div>
+          <div class="impact-stat"><b id="unsupportedCount">0</b><span>unsupported</span></div>
+          <div class="impact-stat"><b id="reviewCount">0</b><span>review</span></div>
+          <div class="impact-stat"><b id="supportedCount">0</b><span>still supported</span></div>
+        </div>
+        <div class="impact-list" id="impactList"></div>
+      </section>
+    </main>
+
+    <aside class="inspector" id="inspector">
+      <div class="inspector-top">
+        <div class="eyebrow" id="selectedKind">SELECTED EVIDENCE</div>
+        <div class="node-id" id="selectedId">E-17</div>
+        <h2 id="selectedTitle">Experiment E-17</h2>
+        <p id="selectedSummary">Simplified onboarding increased completed activation by 11.0% relative.</p>
+      </div>
+
+      <div class="rule"></div>
+
+      <div class="inspector-block">
+        <div class="label-row"><span>STATUS</span><b class="status-pill valid" id="statusPill">VALID</b></div>
+        <div class="source-card">
+          <div class="source-meta" id="sourceMeta">experiment_e17.md · Results</div>
+          <p id="sourceExcerpt">“The simplified onboarding variant increased completed activation from 38.2% to 42.4%, an 11.0% relative lift.”</p>
+        </div>
+      </div>
+
+      <div class="inspector-block" id="supportBlock">
+        <div class="label-row"><span id="supportLabel">VERIFIED SUPPORT</span><b id="supportCount">0 edges</b></div>
+        <div class="support-meter hidden" id="supportMeter">
+          <div class="support-meter-track"><div class="support-meter-fill" id="supportMeterFill"></div></div>
+          <div class="support-caption"><span id="supportRemaining">100% support retained</span><span id="supportLost">0% lost</span></div>
+        </div>
+        <div class="dependency-list" id="dependencyList"></div>
+      </div>
+
+      <button class="danger-btn" id="invalidateBtn">Invalidate this evidence</button>
+      <div class="invalidate-form" id="invalidateForm">
+        <label for="reason">Reason</label>
+        <textarea id="reason">Android instrumentation bug — approximately 30% of activation events were missing.</textarea>
+        <button class="confirm-btn" id="confirmBtn">Propagate impact</button>
+      </div>
+
+      <div class="model-proof">
+        <div class="eyebrow">MODEL PROOF</div>
+        <div class="proof-row"><span>Target provider</span><b>Nebius Token Factory</b></div>
+        <div class="proof-row"><span>Target model</span><b>Nemotron 3 Super</b></div>
+        <div class="proof-row"><span>Edge policy</span><b>Cited + counterfactual</b></div>
+        <div class="proof-row"><span>Propagation</span><b>Deterministic</b></div>
+        <div class="pending-note">Live Nemotron extraction is intentionally marked unproven until Nebius credentials arrive. This demo currently uses the labeled fixture graph.</div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="architecture-overlay" id="architectureOverlay" aria-hidden="true">
+    <section class="architecture-panel" role="dialog" aria-modal="true" aria-labelledby="architectureTitle">
+      <div class="architecture-head">
+        <div><div class="eyebrow">SYSTEM TRACE</div><h2 id="architectureTitle">Where Nemotron ends and deterministic logic begins</h2></div>
+        <button class="ghost-btn" id="closeArchitectureBtn">Close</button>
+      </div>
+      <div class="pipeline">
+        <div class="pipeline-step"><b>01 · ARTIFACTS</b><span>Experiment reports, research, claims, decisions</span></div>
+        <i>→</i>
+        <div class="pipeline-step pending"><b>02 · NEMOTRON</b><span>Extract candidate support edges with verbatim spans</span></div>
+        <i>→</i>
+        <div class="pipeline-step pending"><b>03 · COUNTERFACTUAL</b><span>Would the rationale weaken if this source were false?</span></div>
+        <i>→</i>
+        <div class="pipeline-step"><b>04 · VERIFIED GRAPH</b><span>Only cited, accepted support dependencies propagate</span></div>
+        <i>→</i>
+        <div class="pipeline-step"><b>05 · FALLOUT</b><span>Deterministic support loss + targeted review queue</span></div>
+      </div>
+      <div class="architecture-note"><b>Boundary:</b> Nemotron proposes and verifies semantic edges. It does not decide business truth or execute reversals. Once edges are accepted, blast-radius propagation is deterministic and inspectable.</div>
+      <div class="architecture-status"><span class="provider-dot pending"></span><b>Live model proof pending Nebius credentials.</b> The current graph is a labeled fixture so the product path can be built and tested without fabricating inference results.</div>
+    </section>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
