@@ -100,20 +100,18 @@ function renderDependencies(node) {
   list.innerHTML = '';
 
   if (node.impact) {
-    meter.classList.remove('hidden');
-    const retained = Math.max(0, 1 - node.impact.supportLossRatio);
-    const fill = document.querySelector('#supportMeterFill');
-    fill.style.width = `${Math.round(retained * 100)}%`;
-    fill.className = `support-meter-fill ${node.status}`;
-    document.querySelector('#supportRemaining').textContent = `${Math.round(retained * 100)}% support retained`;
-    document.querySelector('#supportLost').textContent = `${Math.round(node.impact.supportLossRatio * 100)}% lost`;
+    // Internal support scores drive deterministic status propagation, but they are
+    // not calibrated probabilities. Keep the judge-facing explanation qualitative.
+    meter.classList.add('hidden');
 
     const rows = [
       ...node.impact.broken.map((item) => ({ ...item, kind: item.retainedFactor === 0 ? 'broken' : 'degraded', note: item.counterfactual || 'Support weakened after invalidation.' })),
       ...node.impact.surviving.map((item) => ({ ...item, kind: 'surviving', note: item.counterfactual || 'Independent support remains.' }))
     ];
+    const weakened = rows.filter((row) => row.kind !== 'surviving').length;
+    const surviving = rows.length - weakened;
     document.querySelector('#supportLabel').textContent = 'SUPPORT AFTER INVALIDATION';
-    document.querySelector('#supportCount').textContent = `${rows.length} incoming edges`;
+    document.querySelector('#supportCount').textContent = `${weakened} weakened · ${surviving} survives`;
     list.innerHTML = rows.map((row) => `
       <div class="dependency-row ${row.kind === 'surviving' ? '' : row.kind}">
         <b>${row.kind === 'surviving' ? 'SURVIVES' : row.kind === 'broken' ? 'BROKEN' : 'DEGRADED'} · ${row.label}</b>
@@ -174,7 +172,7 @@ function renderImpact() {
     supported: businessItems.filter((node) => node.status === 'supported').length
   };
 
-  document.querySelector('#impactHeadline').textContent = `${businessItems.length} downstream items changed`; 
+  document.querySelector('#impactHeadline').textContent = `${businessItems.length} downstream items changed`;
   document.querySelector('#unsupportedCount').textContent = counts.unsupported;
   document.querySelector('#reviewCount').textContent = counts.needs_review;
   document.querySelector('#supportedCount').textContent = counts.supported;
@@ -190,10 +188,15 @@ function renderImpact() {
       : node.status === 'needs_review'
         ? `${surviving?.label || 'Independent support'} remains`
         : 'Primary independent support intact';
+    const weakenedCount = node.impact?.broken?.length || 0;
+    const survivingCount = node.impact?.surviving?.length || 0;
+    const pathSummary = survivingCount
+      ? `${weakenedCount} weakened path${weakenedCount === 1 ? '' : 's'} · ${survivingCount} independent path${survivingCount === 1 ? '' : 's'} survives`
+      : `${weakenedCount} support path${weakenedCount === 1 ? '' : 's'} broken`;
     button.innerHTML = `
       <b>${node.label}</b>
       <span>${statusLabel(node.status)} · ${detail}</span>
-      <div class="loss">${Math.round((node.impact?.supportLossRatio || 0) * 100)}% support lost</div>`;
+      <div class="loss">${pathSummary}</div>`;
     button.addEventListener('click', () => selectNode(node.id));
     list.appendChild(button);
   }
