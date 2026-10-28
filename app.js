@@ -7,7 +7,7 @@ const baselineNodes = atlasGraph.nodes.map((node) => ({
 }));
 
 const state = {
-  selected: 'E17',
+  selected: null,
   invalidated: false,
   nodes: baselineNodes,
   result: null
@@ -15,6 +15,7 @@ const state = {
 
 const layer = document.querySelector('#nodeLayer');
 const edgeLayer = document.querySelector('#edgeLayer');
+const inspector = document.querySelector('#inspector');
 const invalidateBtn = document.querySelector('#invalidateBtn');
 const invalidateForm = document.querySelector('#invalidateForm');
 
@@ -26,8 +27,14 @@ function baselineNodeById(id) {
   return atlasGraph.nodes.find((node) => node.id === id);
 }
 
+function visualPoint(node) {
+  const xByType = { evidence: 16, claim: 48, decision: 82, artifact: 82 };
+  return { x: xByType[node.type] ?? node.x, y: node.y };
+}
+
 function svgPoint(node) {
-  return { x: (node.x / 100) * 1000, y: (node.y / 100) * 700 };
+  const point = visualPoint(node);
+  return { x: (point.x / 100) * 1000, y: (point.y / 100) * 700 };
 }
 
 function statusLabel(status) {
@@ -42,6 +49,19 @@ function statusLabel(status) {
 
 function displayId(id) {
   return id.replace(/^([A-Z])(\d+)$/, '$1-$2');
+}
+
+function openInspector() {
+  inspector.classList.add('open');
+  inspector.setAttribute('aria-hidden', 'false');
+}
+
+function closeInspector() {
+  state.selected = null;
+  inspector.classList.remove('open');
+  inspector.setAttribute('aria-hidden', 'true');
+  invalidateForm.classList.remove('open');
+  renderNodes();
 }
 
 function renderEdges() {
@@ -65,30 +85,35 @@ function updateEdgeStates() {
   edgeLayer.querySelectorAll('.edge').forEach((path) => {
     path.classList.remove('affected', 'review', 'secondary');
     if (!state.result) return;
+
     const target = nodeById(path.dataset.to);
-    const targetImpact = target?.impact;
-    if (!targetImpact?.path?.includes(path.dataset.from) || !targetImpact.path.includes(path.dataset.to)) return;
-    if (target.status === 'unsupported') path.classList.add('affected');
-    else if (target.status === 'needs_review') path.classList.add('review');
-    else if (target.status === 'supported') path.classList.add('secondary');
+    const impact = target?.impact;
+    if (!impact) return;
+
+    const broken = impact.broken?.some((item) => item.from === path.dataset.from);
+    const surviving = impact.surviving?.some((item) => item.from === path.dataset.from);
+
+    if (broken && target.status === 'unsupported') path.classList.add('affected');
+    else if (broken) path.classList.add('review');
+    else if (surviving) path.classList.add('secondary');
   });
 }
 
 function renderNodes() {
   layer.innerHTML = '';
   for (const node of state.nodes) {
+    const position = visualPoint(node);
     const element = document.createElement('button');
     element.className = `node ${node.status} ${state.selected === node.id ? 'selected' : ''}`;
-    element.style.left = `${node.x}%`;
-    element.style.top = `${node.y}%`;
+    element.style.left = `${position.x}%`;
+    element.style.top = `${position.y}%`;
     element.dataset.id = node.id;
     element.innerHTML = `
-      <div class="node-top">
-        <span class="node-kind">${node.type.toUpperCase()} · ${node.id}</span>
-        <span class="node-state"></span>
-      </div>
-      <h3>${node.label}</h3>
-      <p>${node.summary}</p>`;
+      <span class="node-copy">
+        <span class="node-kind">${node.type.toUpperCase()} · ${displayId(node.id)}</span>
+        <h3>${node.label}</h3>
+        <p>${node.summary}</p>
+      </span>`;
     element.addEventListener('click', () => selectNode(node.id));
     layer.appendChild(element);
   }
@@ -100,10 +125,7 @@ function renderDependencies(node) {
   list.innerHTML = '';
 
   if (node.impact) {
-    // Internal support scores drive deterministic status propagation, but they are
-    // not calibrated probabilities. Keep the judge-facing explanation qualitative.
     meter.classList.add('hidden');
-
     const rows = [
       ...node.impact.broken.map((item) => ({ ...item, kind: item.retainedFactor === 0 ? 'broken' : 'degraded', note: item.counterfactual || 'Support weakened after invalidation.' })),
       ...node.impact.surviving.map((item) => ({ ...item, kind: 'surviving', note: item.counterfactual || 'Independent support remains.' }))
@@ -147,7 +169,7 @@ function selectNode(id) {
   state.selected = id;
   renderNodes();
   const node = nodeById(id);
-  document.querySelector('#selectedKind').textContent = `SELECTED ${node.type.toUpperCase()}`;
+  document.querySelector('#selectedKind').textContent = node.type.toUpperCase();
   document.querySelector('#selectedId').textContent = displayId(id);
   document.querySelector('#selectedTitle').textContent = node.label;
   document.querySelector('#selectedSummary').textContent = node.summary;
@@ -162,41 +184,43 @@ function selectNode(id) {
   invalidateBtn.classList.toggle('hidden', !canInvalidate);
   if (!canInvalidate) invalidateForm.classList.remove('open');
   renderDependencies(node);
+  openInspector();
 }
 
 function renderImpact() {
   const businessItems = state.result.impacted.filter((node) => node.type === 'decision' || node.type === 'artifact');
+  const actionItems = businessItems.filter((node) => node.status !== 'supported');
   const counts = {
     unsupported: businessItems.filter((node) => node.status === 'unsupported').length,
     needs_review: businessItems.filter((node) => node.status === 'needs_review').length,
     supported: businessItems.filter((node) => node.status === 'supported').length
   };
 
-  document.querySelector('#impactHeadline').textContent = `${businessItems.length} downstream items changed`;
   document.querySelector('#unsupportedCount').textContent = counts.unsupported;
   document.querySelector('#reviewCount').textContent = counts.needs_review;
   document.querySelector('#supportedCount').textContent = counts.supported;
+  document.querySelector('#affectedCount').textContent = state.result.impacted.filter((node) => node.status !== 'supported').length;
+  document.querySelector('#decisionRiskCount').textContent = actionItems.filter((node) => node.type === 'decision').length;
+  document.querySelector('#stillSupportedHero').textContent = counts.supported;
 
   const list = document.querySelector('#impactList');
   list.innerHTML = '';
-  for (const node of businessItems) {
+  for (const node of actionItems) {
     const button = document.createElement('button');
     button.className = `impact-item ${node.status}`;
     const surviving = node.impact?.surviving?.[0];
     const detail = node.status === 'unsupported'
       ? 'Primary rationale lost'
-      : node.status === 'needs_review'
-        ? `${surviving?.label || 'Independent support'} remains`
-        : 'Primary independent support intact';
+      : `${surviving?.label || 'Independent support'} remains, but revalidation is required`;
     const weakenedCount = node.impact?.broken?.length || 0;
     const survivingCount = node.impact?.surviving?.length || 0;
     const pathSummary = survivingCount
       ? `${weakenedCount} weakened path${weakenedCount === 1 ? '' : 's'} · ${survivingCount} independent path${survivingCount === 1 ? '' : 's'} survives`
       : `${weakenedCount} support path${weakenedCount === 1 ? '' : 's'} broken`;
     button.innerHTML = `
-      <b>${node.label}</b>
-      <span>${statusLabel(node.status)} · ${detail}</span>
-      <div class="loss">${pathSummary}</div>`;
+      <b>${displayId(node.id)} · ${node.label}</b>
+      <span>${detail}</span>
+      <div class="loss">${statusLabel(node.status)} · ${pathSummary}</div>`;
     button.addEventListener('click', () => selectNode(node.id));
     list.appendChild(button);
   }
@@ -210,12 +234,9 @@ function invalidate() {
   state.invalidated = true;
   state.selected = 'E17';
   invalidateForm.classList.remove('open');
+  document.body.classList.add('is-fallout');
 
-  const dot = document.querySelector('#rail-dot-E17');
-  dot.classList.remove('valid');
-  dot.classList.add('invalid');
-
-  const source = baselineNodeById('E17');
+  const source = visualPoint(baselineNodeById('E17'));
   const ripple = document.querySelector('#ripple');
   ripple.style.left = `${source.x}%`;
   ripple.style.top = `${source.y}%`;
@@ -228,53 +249,59 @@ function invalidate() {
     updateEdgeStates();
     selectNode('E17');
     renderImpact();
-  }, 280);
+  }, 300);
 }
 
 function reset() {
   state.invalidated = false;
-  state.selected = 'E17';
+  state.selected = null;
   state.result = null;
   state.nodes = baselineNodes.map((node) => ({ ...node }));
+  document.body.classList.remove('is-fallout');
   document.querySelector('#impactDrawer').classList.remove('open');
   invalidateForm.classList.remove('open');
-  const dot = document.querySelector('#rail-dot-E17');
-  dot.classList.add('valid');
-  dot.classList.remove('invalid');
+  inspector.classList.remove('open');
+  inspector.setAttribute('aria-hidden', 'true');
   renderNodes();
   updateEdgeStates();
-  selectNode('E17');
 }
 
 invalidateBtn.addEventListener('click', () => invalidateForm.classList.toggle('open'));
 document.querySelector('#confirmBtn').addEventListener('click', invalidate);
 document.querySelector('#resetBtn').addEventListener('click', reset);
-document.querySelectorAll('[data-select]').forEach((button) => button.addEventListener('click', () => selectNode(button.dataset.select)));
+document.querySelector('#closeInspectorBtn').addEventListener('click', closeInspector);
+document.querySelector('#primaryInvalidateCta').addEventListener('click', () => {
+  selectNode('E17');
+  invalidateForm.classList.add('open');
+  setTimeout(() => document.querySelector('#reason').focus(), 100);
+});
+
+document.querySelector('#impactNav').addEventListener('click', () => {
+  if (state.invalidated) document.querySelector('#impactDrawer').scrollIntoView({ behavior: 'smooth', block: 'end' });
+});
 
 const architectureOverlay = document.querySelector('#architectureOverlay');
-document.querySelector('#architectureBtn').addEventListener('click', () => {
+function openArchitecture() {
   architectureOverlay.classList.add('open');
   architectureOverlay.setAttribute('aria-hidden', 'false');
-});
-document.querySelector('#closeArchitectureBtn').addEventListener('click', () => {
+}
+function closeArchitecture() {
   architectureOverlay.classList.remove('open');
   architectureOverlay.setAttribute('aria-hidden', 'true');
-});
+}
+document.querySelector('#architectureBtn').addEventListener('click', openArchitecture);
+document.querySelector('#architectureNav').addEventListener('click', openArchitecture);
+document.querySelector('#closeArchitectureBtn').addEventListener('click', closeArchitecture);
 architectureOverlay.addEventListener('click', (event) => {
-  if (event.target === architectureOverlay) {
-    architectureOverlay.classList.remove('open');
-    architectureOverlay.setAttribute('aria-hidden', 'true');
-  }
+  if (event.target === architectureOverlay) closeArchitecture();
 });
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
-    architectureOverlay.classList.remove('open');
-    architectureOverlay.setAttribute('aria-hidden', 'true');
+    closeArchitecture();
+    if (state.selected) closeInspector();
   }
 });
 
 document.querySelector('#workspaceName').textContent = atlasGraph.workspace;
-document.querySelector('#workspaceMeta').textContent = `${atlasGraph.nodes.length} nodes · ${atlasGraph.edges.length} verified edges`;
 renderEdges();
 renderNodes();
-selectNode('E17');
