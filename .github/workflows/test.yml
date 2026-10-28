@@ -13,4 +13,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm test
+      - name: Check browser and API syntax
+        run: |
+          node --check app.js
+          node --check api/infer.js
+          node --check api/status.js
+      - name: Run deterministic tests
+        run: npm test
