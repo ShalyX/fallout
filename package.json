@@ -1,0 +1,11 @@
+{
+  "name": "fallout-evidence-blast-radius",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "eval:nemotron": "node scripts/run-edge-eval.mjs"
+  }
+}
