@@ -91,6 +91,7 @@ Until that credential exists, model quality remains explicitly **UNPROVEN**. The
 - `src/core/propagate.mjs` — deterministic blast-radius engine
 - `src/model/` — Nebius/Nemotron provider boundary
 - `evals/` — labeled live model benchmark
-- `tests/` — deterministic propagation tests
+- `tests/` — deterministic propagation and corpus-integrity tests
 - `api/` — deployment-ready provider status/inference handlers
-- `PRODUCT.md`, `DEMO.md`, `DESIGN.md`, `SCORECARD.md`, `PROJECT.md` — Hackathon Operator sources of truth
+- `prompts/` — grounded dependency-classification instructions
+- `.github/workflows/` — CI test proof for every push and pull request
