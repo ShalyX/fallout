@@ -249,6 +249,13 @@ function invalidate() {
     updateEdgeStates();
     selectNode('E17');
     renderImpact();
+    if (window.innerWidth <= 1100) {
+      setTimeout(() => {
+        const graph = document.querySelector('#graphStage');
+        const top = graph.getBoundingClientRect().top + window.scrollY - 64;
+        window.scrollTo({ top: Math.max(0, top), behavior: 'auto' });
+      }, 80);
+    }
   }, 300);
 }
 
@@ -273,7 +280,11 @@ document.querySelector('#closeInspectorBtn').addEventListener('click', closeInsp
 document.querySelector('#primaryInvalidateCta').addEventListener('click', () => {
   selectNode('E17');
   invalidateForm.classList.add('open');
-  setTimeout(() => document.querySelector('#reason').focus(), 100);
+  if (window.innerWidth > 1100) {
+    setTimeout(() => document.querySelector('#reason').focus(), 100);
+  } else {
+    setTimeout(() => inspector.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+  }
 });
 
 document.querySelector('#impactNav').addEventListener('click', () => {
